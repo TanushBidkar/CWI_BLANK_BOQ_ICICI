@@ -142,6 +142,10 @@
                                     <button id="running-items-variance-btn" class="w-full bg-cyan-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-cyan-700 transition duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed">
                                         Check for (R.ft/R.mt) based items exceeding 10%
                                     </button>
+                                    <button id="sqft-variance-btn" class="w-full bg-purple-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-purple-700 transition duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed">
+    Check for (Sq.ft) based items exceeding 25%
+</button>
+
                                 </div>
 
                                 <h4 class="font-semibold pt-4 mb-2 text-white">Manual Verification</h4>
@@ -253,15 +257,15 @@
             EXCEEDED_WO_QTY: 'Exceeded WO Quantity (Missing Remark)',
             POSITIVE_VARIANCE_NOS: '>10% Positive Variance (Unit: Nos)',
             POSITIVE_VARIANCE_RUNNING: '>10% Positive Variance (Unit: R.ft/R.mt)',
+            POSITIVE_VARIANCE_SQFT: '>25% Positive Variance (Unit: Sq.ft/Sq.mt)',
             MANUAL_CHECK_FAILED: 'Manual Verification Failed',
         };
 
         const checklistConfig = {
             concealed: [
                 { id: 'dismantling_photos', text: 'Appropriate photographs of dismantling provided', type: 'cwi_qty_check', keyword: 'dismantling' },
-                { id: 'pcc_photos', text: 'Appropriate Photos of PCC are provided for certification', type: 'cwi_qty_check', keyword: 'pcc' },
-                { id: 'rcc_photos', text: 'Appropriate Photos of RCC in strong room are provided for certification', type: 'cwi_qty_check', keyword: 'strong room' },
-                { id: 'reinforcement_photos', text: 'Strong room reinforcement photographs provided', type: 'cwi_qty_check', keyword: 'reinforcement' },
+                { id: 'pcc_photos', text: 'Appropriate Photos of floor protection are provided for certification', type: 'cwi_qty_check', keyword: 'flooring for floor protection' },
+                { id: 'reinforcement_photos', text: 'Strong room reinforcement photographs provided', type: 'cwi_qty_check', keyword: 'strong room' },
                 { id: 'pop_photos', text: 'Photographs of POP Covering on floor provided', type: 'cwi_qty_check', keyword: ['covering on floor', 'Floor Protection Sheet'] },
                 { id: 'plumbing_photos', text: 'Photographs of Internal Concealed plumbing works provided', type: 'cwi_qty_check', keyword: 'plumbing' },
                 { id: 'core_cut_photos', text: 'Photographs of core cut in RCC slab provided', type: 'cwi_qty_check', keyword: 'core cut' },
@@ -309,7 +313,7 @@
 ],
             non_standard: [
                 { id: 'nsi_in_sheet', text: 'Any Non standard item in Measurement sheet?' },
-                { id: 'nsi_rate_validation', text: 'Is rate validation done for the non standard items done by CWI senior team member' }
+                { id: 'nsi_rate_validation', text: 'Has the quantity for non-standard items been verified by a CWI senior team member?' }
             ]
         };
         // --- DOM Element References ---
@@ -329,6 +333,7 @@
         const exceededWoQtyBtn = document.getElementById('exceeded-wo-qty-btn');
         const varianceThresholdBtn = document.getElementById('variance-threshold-btn');
         const runningItemsVarianceBtn = document.getElementById('running-items-variance-btn');
+        const sqftVarianceBtn = document.getElementById('sqft-variance-btn');
         const debugHeadersBtn = document.getElementById('debug-headers-btn');
         const sheetTitleEl = document.getElementById('sheet-title');
         const dataTableContainer = document.getElementById('data-table-container');
@@ -364,6 +369,7 @@
         exceededWoQtyBtn.addEventListener('click', runExceededWoQtyCheck);
         varianceThresholdBtn.addEventListener('click', runVarianceThresholdCheck);
         runningItemsVarianceBtn.addEventListener('click', runRunningItemsVarianceCheck);
+        sqftVarianceBtn.addEventListener('click', runSqftVarianceCheck);
         debugHeadersBtn.addEventListener('click', debugHeaders);
         downloadReportBtn.addEventListener('click', generateErrorReport);
         checkConcealedBtn.addEventListener('click', () => openModal('concealed'));
@@ -490,6 +496,7 @@
             exceededWoQtyBtn.disabled = !hasExtracted;
             varianceThresholdBtn.disabled = !hasExtracted;
             runningItemsVarianceBtn.disabled = !hasExtracted;
+            sqftVarianceBtn.disabled = !hasExtracted;
             cwiWoVarianceBtn.disabled = !hasExtracted;
             totalCheckBtn.disabled = !hasExtracted;
             savingsExcessCheckBtn.disabled = !hasExtracted;
@@ -510,6 +517,7 @@
             exceededWoQtyBtn.title = hasExtracted ? "Finds work where the executed quantity is greater than the WO quantity and is missing a remark" : extractedSheetTitle;
             varianceThresholdBtn.title = hasExtracted ? "Finds items (Unit: Nos) where the quantity variance between CWI and Work Order is positive and exceeds 10%" : extractedSheetTitle;
             runningItemsVarianceBtn.title = hasExtracted ? "Finds R.ft/R.mt items where the quantity variance between CWI and Work Order is positive and exceeds 10%" : extractedSheetTitle;
+            sqftVarianceBtn.title = hasExtracted ? "Finds Sq.ft/Sq.mt items where the quantity variance between CWI and Work Order is positive and exceeds 25%" : extractedSheetTitle;
             cwiWoVarianceBtn.title = hasExtracted ? "Validate 'Variance (CWI vs WO)' column" : extractedSheetTitle;
             totalCheckBtn.title = hasExtracted ? "Check 'Total' = 'Savings' + 'Excess'" : extractedSheetTitle;
             savingsExcessCheckBtn.title = hasExtracted ? "Validate 'Savings' and 'Excess' calculation logic" : extractedSheetTitle;
@@ -1866,6 +1874,95 @@ detailsButtonHtml = `<button id="details-${item.id}" class="details-button" ${!i
                 }
             });
         }
+        function runSqftVarianceCheck() {
+    updateErrorReport([], errorTypes.POSITIVE_VARIANCE_SQFT, () => {});
+    runGenericValidation({
+        keys: [
+            { keyName: 'unitKey', potentialNames: ['Unit'] },
+            { keyName: 'cwiQtyKey', potentialNames: ['As per CWI (Qty)'] },
+            { keyName: 'woQtyKey', potentialNames: ['As per WO - Qty', 'As per WO/PO (Qty)'] },
+            { keyName: 'uCodeKey', potentialNames: ['U.code', 'U Code'] },
+            { keyName: 'particularsKey', potentialNames: ['Particulars', 'Item'] }
+        ],
+        displayResults: displaySqftVarianceResults,
+        filterRow: (row, keys) => {
+            // Normalize unit: lowercase and remove dots/spaces
+            const unit = (row[keys.unitKey] || '').toString().toLowerCase().replace(/[^a-z0-9]/g, '');
+            // Check for sqft, sqmt, sqm, etc.
+            return unit.includes('sqft') || unit.includes('sqmt') || unit.includes('sqm') || unit.includes('sft');
+        },
+        processRow: (row, keys) => {
+            const cwiQty = parseFloat(row[keys.cwiQtyKey]) || 0;
+            const woQty = parseFloat(row[keys.woQtyKey]) || 0;
+
+            if (woQty <= 0) return null;
+
+            const variancePct = ((cwiQty - woQty) / woQty) * 100;
+
+            // CHECK FOR > 25%
+            if (variancePct > 25) {
+                return {
+                    uCode: row[keys.uCodeKey] || 'N/A',
+                    particulars: row[keys.particularsKey] || 'No Description',
+                    unit: row[keys.unitKey],
+                    woQty,
+                    cwiQty,
+                    variancePct
+                };
+            }
+            return null;
+        }
+    });
+}
+
+function displaySqftVarianceResults(issues, config) {
+    const { checkedItemsCount } = config;
+    resultsContainer.innerHTML = '';
+    validationResultsEl.classList.remove('hidden');
+
+    const varianceSqftFormatter = (issue, type) => ({
+        particulars: `${issue.uCode} - ${issue.particulars}`,
+        type: type,
+        correction: `Quantity variance for this area item (${issue.unit}) is +${issue.variancePct.toFixed(2)}%, which is over the 25% threshold. (WO Qty: ${issue.woQty.toLocaleString()}, CWI Qty: ${issue.cwiQty.toLocaleString()}).`
+    });
+    updateErrorReport(issues, errorTypes.POSITIVE_VARIANCE_SQFT, varianceSqftFormatter);
+
+    if (checkedItemsCount === 0) {
+        const infoCard = document.createElement('div');
+        infoCard.className = 'p-4 rounded-lg border bg-blue-100 border-blue-300 text-center';
+        infoCard.innerHTML = `<div class="font-bold text-blue-800 text-lg flex items-center justify-center">No Applicable Items Found</div><div class="text-blue-700 mt-1">No items with 'Sq.ft' or 'Sq.mt' units were found.</div>`;
+        resultsContainer.appendChild(infoCard);
+        alert("No items with 'Sq.ft' or 'Sq.mt' units were found.");
+    } else if (issues.length === 0) {
+        const successCard = document.createElement('div');
+        successCard.className = 'p-4 rounded-lg border bg-green-100 border-green-300 text-center';
+        successCard.innerHTML = `<div class="font-bold text-green-800 text-lg flex items-center justify-center">✅ Sq.ft Variances OK</div><div class="text-green-700 mt-1">All ${checkedItemsCount} Sq.ft/Sq.mt items are within the 25% variance threshold.</div>`;
+        resultsContainer.appendChild(successCard);
+        alert("Perfect! All Sq.ft/Sq.mt item quantity variances are within the 25% threshold.");
+    } else {
+        const errorSummaryCard = document.createElement('div');
+        errorSummaryCard.className = 'mb-4 p-4 rounded-lg text-center bg-purple-100 border-purple-300';
+        errorSummaryCard.innerHTML = `<div class="font-bold text-purple-800 text-lg flex items-center justify-center">⚠ High Area Variances Found</div><div class="text-purple-700 mt-1">${issues.length} of ${checkedItemsCount} Sq.ft/Sq.mt item(s) exceed 25% positive variance.</div>`;
+        resultsContainer.appendChild(errorSummaryCard);
+        alert(`${issues.length} Sq.ft/Sq.mt item(s) exceeded the >25% variance threshold.`);
+
+        issues.forEach(item => {
+            const issueCard = document.createElement('div');
+            const varianceText = `<span class="font-bold text-purple-800">+${item.variancePct.toFixed(2)}%</span>`;
+            issueCard.className = 'p-4 rounded-lg border border-purple-400 bg-purple-50 text-gray-900';
+            issueCard.innerHTML = `
+                <p class="font-semibold">${item.uCode} - ${item.particulars}</p>
+                <div class="mt-2 p-2 bg-white/50 rounded-md">
+                    <div class="text-sm grid grid-cols-1 md:grid-cols-3 gap-2">
+                        <p>Planned Qty (WO): <span class="font-medium">${item.woQty.toLocaleString('en-IN')}</span></p>
+                        <p>Actual Qty (CWI): <span class="font-medium">${item.cwiQty.toLocaleString('en-IN')}</span></p>
+                        <p>Variance (<span class="italic">${item.unit}</span>): ${varianceText}</p>
+                    </div>
+                </div>`;
+            resultsContainer.appendChild(issueCard);
+        });
+    }
+}
 
         function displayRunningItemsVarianceResults(issues, config) {
             const { checkedItemsCount } = config;
