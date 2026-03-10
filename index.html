@@ -113,13 +113,13 @@
                                         Check CWI vs WO Qty Variance
                                     </button>
                                     <button id="savings-excess-check-btn" class="w-full bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700 transition duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed">
-                                        Check for Positive and Negative Variance w.r.t PO
+                                        Check for Savings and Excess Logic
                                     </button>
                                     <button id="total-check-btn" class="w-full bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700 transition duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed">
-                                        Check for Total = Positive + Negative Variance w.r.t PO
+                                        Check for Total = Savings + Excess
                                     </button>
                                     <button id="find-false-btn" class="w-full bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700 transition duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed">
-                                        Check for Postive + Negative Variance = CWI - WO
+                                        Check for Savings + Excess = CWI - WO
                                     </button>
                                 </div>
 
@@ -307,7 +307,7 @@
     
 ],
             pm_approval: [
-    { id: 'pm_mathadi_charges', text: 'Is Mathadi charges approved by PM ?', type: 'cwi_qty_check', keyword: 'mathadi charges' },
+    { id: 'pm_mathadi_charges', text: 'Is Mathadi charges approved by PM ?', type: 'cwi_qty_check', keyword: 'mathadi' },
     { id: 'pm_electricity_bill', text: 'Is Electricity bill for WIP periods approved by PM ?', type: 'cwi_qty_check', keyword: 'Electricity bill for WIP periods' }
 ],
             non_standard: [
@@ -2046,8 +2046,5 @@ function displaySqftVarianceResults(issues, config) {
     </script>
 </body>
 </html>
-
-
-
 
 
